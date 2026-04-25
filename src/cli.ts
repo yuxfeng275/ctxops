@@ -4,6 +4,9 @@ import { Command } from 'commander';
 import { initCommand } from './commands/init.js';
 import { linkCommand } from './commands/link.js';
 import { doctorCommand } from './commands/doctor.js';
+import { statusCommand } from './commands/status.js';
+import { coverageCommand } from './commands/coverage.js';
+import { hookCommand } from './commands/hook.js';
 
 const program = new Command();
 
@@ -45,6 +48,33 @@ program
   .option('--ci', 'CI mode: output GitHub Actions annotations')
   .action(async (options) => {
     await doctorCommand(options);
+  });
+
+// ── ctx status ──────────────────────────────────────────────────
+program
+  .command('status')
+  .description('Show context health overview')
+  .option('--format <format>', 'Output format: text or json', 'text')
+  .action(async (options) => {
+    await statusCommand(options);
+  });
+
+// ── ctx coverage ────────────────────────────────────────────────
+program
+  .command('coverage')
+  .description('Show context coverage of code directories')
+  .option('--format <format>', 'Output format: text or json', 'text')
+  .action(async (options) => {
+    await coverageCommand(options);
+  });
+
+// ── ctx hook ────────────────────────────────────────────────────
+program
+  .command('hook [action]')
+  .description('Manage git pre-commit hook (install/remove)')
+  .option('--remove', 'Remove the ctxops pre-commit hook')
+  .action(async (action: string | undefined, options) => {
+    await hookCommand(action ?? 'status', options);
   });
 
 program.parse();

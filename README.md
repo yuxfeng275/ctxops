@@ -1,3 +1,7 @@
+<p align="right">
+  <a href="./README.zh-CN.md">🇨🇳 中文</a>
+</p>
+
 # ctxops
 
 **The Context Integrity Engine for AI Coding Teams.**

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { analyzeCoChanges, coChangesToGlobs, analyzeSemanticLinks } from './smart-linker.js';
 
 /**
  * Recursively find all markdown files in a directory.
@@ -218,10 +219,12 @@ export function extractPathsFromCtxopsComment(documentPath: string): string[] {
 }
 
 /**
- * Auto-discover all links for a document using the three-layer strategy:
+ * Auto-discover all links for a document using the five-layer strategy:
  *   1. Explicit: <!-- ctxops: paths=... -->
  *   2. Convention: directory name matching
  *   3. Content: code path references in the markdown
+ *   4. Git co-change: files frequently modified together in git history
+ *   5. Semantic: technical identifiers (class/function names) grep-matched to code
  */
 export function autoDiscoverLinks(
   documentPath: string,
@@ -230,30 +233,34 @@ export function autoDiscoverLinks(
   const codePaths: string[] = [];
   const sources: string[] = [];
 
+  const addPaths = (paths: string[], source: string) => {
+    for (const cp of paths) {
+      if (!codePaths.includes(cp)) {
+        codePaths.push(cp);
+        if (!sources.includes(source)) sources.push(source);
+      }
+    }
+  };
+
   // Layer 1: Explicit ctxops comment
-  const explicit = extractPathsFromCtxopsComment(documentPath);
-  if (explicit.length > 0) {
-    codePaths.push(...explicit);
-    sources.push('ctxops-comment');
-  }
+  addPaths(extractPathsFromCtxopsComment(documentPath), 'ctxops-comment');
 
   // Layer 2: Convention-based
-  const convention = inferCodePathsFromConvention(documentPath, root);
-  for (const cp of convention) {
-    if (!codePaths.includes(cp)) {
-      codePaths.push(cp);
-      if (!sources.includes('convention')) sources.push('convention');
-    }
-  }
+  addPaths(inferCodePathsFromConvention(documentPath, root), 'convention');
 
   // Layer 3: Content scanning
-  const content = extractCodePathsFromContent(documentPath, root);
-  for (const cp of content) {
-    if (!codePaths.includes(cp)) {
-      codePaths.push(cp);
-      if (!sources.includes('content-scan')) sources.push('content-scan');
-    }
-  }
+  addPaths(extractCodePathsFromContent(documentPath, root), 'content-scan');
+
+  // Layer 4: Git co-change analysis
+  const relPath = path.relative(root, documentPath);
+  const coChanges = analyzeCoChanges(relPath, root);
+  const coChangeGlobs = coChangesToGlobs(coChanges);
+  addPaths(coChangeGlobs, 'git-cochange');
+
+  // Layer 5: Semantic identifier matching
+  const semanticPaths = analyzeSemanticLinks(documentPath, root);
+  addPaths(semanticPaths, 'semantic');
 
   return { codePaths, sources };
 }
+

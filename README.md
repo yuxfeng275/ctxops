@@ -128,6 +128,51 @@ ctx doctor --base main --mode strict      # Exit 1 on drift (for CI)
 
 If no links exist, `doctor` auto-discovers them — truly zero config.
 
+### `ctx status`
+
+Global context health overview — like `git status` for your AI context:
+
+```bash
+ctx status
+
+# Output:
+#   Context Health: ██████████████████████████████ 100%
+#   ● Fresh: 5    ● Aging: 1    ● Stale: 0    Total: 6
+#
+#   ✔  docs/ai/modules/order.md        2d ago  (3 paths)
+#   ◐  docs/ai/modules/inventory.md   25d ago  (2 paths)
+```
+
+### `ctx coverage`
+
+Show which code directories have context docs vs which are uncovered:
+
+```bash
+ctx coverage
+
+# Output:
+#   Context Coverage: ████████████████████░░░░░░░░░░ 67%
+#   4/6 code directories have linked context docs
+#
+#   Covered:
+#     ✔ services/order
+#     ✔ services/inventory
+#   Uncovered:
+#     ✖ services/payment  ← needs context doc
+```
+
+### `ctx hook`
+
+Manage git pre-commit hook for local checking:
+
+```bash
+ctx hook install    # Install pre-commit hook
+ctx hook remove     # Remove it
+ctx hook            # Check status
+```
+
+The hook runs `ctx doctor --mode warn` before each commit.
+
 ## AI Agent Integration
 
 `ctx init` automatically generates instruction files for AI coding agents:

@@ -22,11 +22,11 @@ AI coding tools are getting smarter, but team-level development still breaks on 
 ## Quick Start
 
 ```bash
-# Initialize ctxops in your repo
+# Initialize ctxops (generates AGENTS.md + Claude Code skill automatically)
 npx ctxops init
 
-# Link a doc to code paths
-npx ctxops link docs/ai/modules/order.md "services/order/**"
+# Auto-discover document-code links (zero config)
+npx ctxops link --auto
 
 # Detect drift in your PR
 npx ctxops doctor --base main
@@ -63,13 +63,13 @@ Summary: 1 stale, 1 drifted, 1 synced, 1 unaffected
 
 ## How It Works
 
-1. **Link** documents to code paths — convention-based by default, explicit when needed
+1. **Link** documents to code paths — auto-discovered or explicit
 2. **Detect** which docs are affected when code changes (PR-level drift detection)
 3. **Enforce** context integrity in CI with `--mode strict`
 
 ```mermaid
 graph LR
-    A[ctx link] -->|registers| B[".ctxops/links.json"]
+    A[ctx link --auto] -->|registers| B[".ctxops/links.json"]
     C[git diff] -->|feeds| D[ctx doctor]
     B -->|informs| D
     D -->|outputs| E["Drift Report"]
@@ -86,17 +86,34 @@ Initialize ctxops in your git repository:
 ctx init
 ```
 
-Creates `.ctxops/` config directory and `docs/ai/` template structure.
+Creates:
+- `.ctxops/` — config directory
+- `docs/ai/` — context fragment templates
+- `AGENTS.md` — instructions for AI agents (Codex, Gemini CLI, etc.)
+- `.claude/skills/ctxops/` — Claude Code skill (auto-loaded)
 
-### `ctx link <doc> <code-paths...>`
+### `ctx link`
 
 Create document-to-code associations:
 
 ```bash
-ctx link docs/ai/modules/order.md "services/order/**" "shared/models/order.ts"
-ctx link --list              # Show all links
-ctx link --remove <doc>      # Remove a link
+ctx link --auto                    # ⭐ Auto-discover all links (zero config)
+ctx link docs/ai/modules/order.md "services/order/**"  # Manual link
+ctx link --list                    # Show all links
+ctx link --remove <doc>            # Remove a link
 ```
+
+#### 5-Layer Smart Auto-Link
+
+`ctx link --auto` uses five inference layers to discover document-code associations:
+
+| Layer | Method | Example |
+|---|---|---|
+| 1. `ctxops` comment | `<!-- ctxops: paths=... -->` | Explicit, highest priority |
+| 2. Convention | Directory name matching | `modules/order.md` → `services/order/**` |
+| 3. Content scan | Code paths referenced in markdown | Doc mentions `services/inventory/service.ts` |
+| 4. Git co-change | Files modified together in git history | Statistical association from commits |
+| 5. Semantic match | Class/function names grep-matched | Doc mentions `OrderHandler` → finds the file |
 
 ### `ctx doctor --base <branch>`
 
@@ -108,6 +125,38 @@ ctx doctor --base main --format json      # Machine-readable
 ctx doctor --base main --format sarif     # GitHub Code Scanning
 ctx doctor --base main --mode strict      # Exit 1 on drift (for CI)
 ```
+
+If no links exist, `doctor` auto-discovers them — truly zero config.
+
+## AI Agent Integration
+
+`ctx init` automatically generates instruction files for AI coding agents:
+
+| Agent | File | How It Works |
+|---|---|---|
+| **Claude Code** | `.claude/skills/ctxops/SKILL.md` | Auto-loaded as skill |
+| **Codex** (OpenAI) | `AGENTS.md` | Read from repo root |
+| **Gemini CLI** | `AGENTS.md` | Read from repo root |
+| **Cursor** | `.claude/skills/` or Rules | Reuses skill file |
+| **Cline / OpenCode** | `AGENTS.md` | Read from repo root |
+
+### Agent Workflow
+
+```
+Agent receives task: modify services/order/handler.ts
+  │
+  ├→ 1. Pre-code: npx ctxops doctor --base main --format json
+  │     Finds order.md is drifted → reads but verifies against code
+  │
+  ├→ 2. Modifies code
+  │
+  ├→ 3. Post-code: npx ctxops doctor --base main
+  │     Detects drift → auto-updates order.md
+  │
+  └→ 4. Single commit with code + doc update → doctor shows SYNCED ✅
+```
+
+No MCP server, no SDK, no configuration. Agents just run commands.
 
 ## CI Integration
 

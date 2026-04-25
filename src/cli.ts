@@ -10,7 +10,7 @@ const program = new Command();
 program
   .name('ctx')
   .description('ctxops — The Context Integrity Engine for AI Coding Teams')
-  .version('0.1.0');
+  .version('0.2.0');
 
 // ── ctx init ────────────────────────────────────────────────────
 program

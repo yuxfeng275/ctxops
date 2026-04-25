@@ -1,4 +1,35 @@
 {
   "version": "0.1.0",
-  "links": []
+  "links": [
+    {
+      "document": "docs/ai/00-project-overview.md",
+      "codePaths": [
+        "src/commands/**",
+        "src/**",
+        "src/lib/**"
+      ],
+      "metadata": {
+        "scope": "project",
+        "taskTypes": [],
+        "inferredFrom": "path",
+        "overrides": {}
+      },
+      "lastLinked": "2026-04-25T15:55:38.377Z"
+    },
+    {
+      "document": "docs/ai/01-architecture.md",
+      "codePaths": [
+        "src/commands/**",
+        "src/**",
+        "src/lib/**"
+      ],
+      "metadata": {
+        "scope": "project",
+        "taskTypes": [],
+        "inferredFrom": "path",
+        "overrides": {}
+      },
+      "lastLinked": "2026-04-25T15:55:38.453Z"
+    }
+  ]
 }

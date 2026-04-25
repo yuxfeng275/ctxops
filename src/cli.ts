@@ -27,6 +27,7 @@ program
   .command('link')
   .description('Create or manage document-code associations')
   .argument('[paths...]', 'Document path followed by code paths')
+  .option('--auto', 'Auto-discover links from docs (zero config)')
   .option('--remove', 'Remove the link for the specified document')
   .option('--list', 'List all links')
   .option('--format <format>', 'Output format: text or json', 'text')

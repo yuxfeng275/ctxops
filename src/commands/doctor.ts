@@ -1,8 +1,11 @@
 import chalk from 'chalk';
+import path from 'node:path';
 import { isGitRepo, getGitRoot, getChangedFiles, getFileDiffStat, getLastModifiedDate, daysSince, getCurrentBranch, isFileInChangedList } from '../lib/git.js';
 import { isInitialized, readConfig } from '../lib/config.js';
-import { readLinks } from '../lib/links.js';
+import { readLinks, upsertLink } from '../lib/links.js';
 import { findMatchingChangedFiles } from '../lib/glob.js';
+import { findMarkdownFiles, autoDiscoverLinks } from '../lib/auto-linker.js';
+import { buildMetadata } from '../lib/inference.js';
 import {
   formatDoctorReportText,
   formatDoctorReportJson,
@@ -36,12 +39,39 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   }
 
   const config = readConfig(root);
-  const linksFile = readLinks(root);
+  let linksFile = readLinks(root);
 
-  // No links case
+  // Auto-discover links if none exist
   if (linksFile.links.length === 0) {
-    console.log('No links found. Run "ctx link" to create document-code associations.');
-    process.exit(0);
+    const contextDir = path.join(root, config.contextDir);
+    const mdFiles = findMarkdownFiles(contextDir);
+
+    if (mdFiles.length === 0) {
+      console.log('No links found and no docs in ' + config.contextDir + '.');
+      console.log('Run "ctx link --auto" or create docs in docs/ai/.');
+      process.exit(0);
+    }
+
+    // Auto-discover and persist
+    let autoLinked = 0;
+    for (const mdFile of mdFiles) {
+      if (path.basename(mdFile).startsWith('_')) continue;
+      const relPath = path.relative(root, mdFile);
+      const { codePaths } = autoDiscoverLinks(mdFile, root);
+      if (codePaths.length > 0) {
+        const metadata = buildMetadata(relPath, root);
+        upsertLink(root, relPath, codePaths, metadata);
+        autoLinked++;
+      }
+    }
+
+    if (autoLinked > 0) {
+      console.log(chalk.dim(`Auto-discovered ${autoLinked} link(s) from docs.\n`));
+      linksFile = readLinks(root);
+    } else {
+      console.log('No links found. Run "ctx link --auto" to create document-code associations.');
+      process.exit(0);
+    }
   }
 
   const mode = options.mode ?? config.doctor.defaultMode;

@@ -1,0 +1,14 @@
+{
+  "version": "0.1.0",
+  "contextDir": "docs/ai",
+  "linksFile": ".ctxops/links.json",
+  "doctor": {
+    "freshnessThresholdDays": 30,
+    "defaultMode": "warn"
+  },
+  "inference": {
+    "scopeFromPath": true,
+    "taskTypeFromFilename": true,
+    "freshnessFromGit": true
+  }
+}

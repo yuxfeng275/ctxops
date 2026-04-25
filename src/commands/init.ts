@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { isGitRepo, getGitRoot } from '../lib/git.js';
@@ -232,6 +232,19 @@ export async function initCommand(options: InitOptions): Promise<void> {
     }
   }
 
+  // Write .gitattributes if not exists (merge strategy for links.json)
+  const gitattributes = path.join(root, '.gitattributes');
+  const gitattrsContent = '# ctxops: links.json is auto-regenerable, use ours on conflict\n.ctxops/links.json merge=ours\n';
+  if (!existsSync(gitattributes)) {
+    writeFileSync(gitattributes, gitattrsContent);
+    created.push('.gitattributes');
+  } else {
+    const existing = readFileSync(gitattributes, 'utf-8');
+    if (!existing.includes('.ctxops/links.json')) {
+      writeFileSync(gitattributes, existing + '\n' + gitattrsContent);
+    }
+  }
+
   // Output
   console.log(chalk.green('✔') + ` Initialized ctxops in ${root}`);
   console.log('');
@@ -251,11 +264,14 @@ export async function initCommand(options: InitOptions): Promise<void> {
     console.log(`  ${chalk.cyan('.claude/skills/ctxops/')}   — Claude Code skill`);
   }
   console.log('');
+  console.log(chalk.dim('Note: Run "ctx init" once per project, then commit.'));
+  console.log(chalk.dim('      Other team members just pull — no need to re-init.'));
+  console.log(chalk.dim('      If links.json conflicts, run "ctx link --auto" to regenerate.'));
+  console.log('');
   console.log('Next steps:');
   console.log('  1. Edit docs/ai/00-project-overview.md with your project info');
   console.log(
     '  2. Run: ' + chalk.bold('ctx link --auto') + ' (auto-discover links)',
   );
-  console.log('  3. Run: ' + chalk.bold('ctx doctor --base main'));
+  console.log('  3. Commit and push — teammates just pull, no extra setup');
 }
-

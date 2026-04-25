@@ -50,7 +50,9 @@ export function readLinks(root: string): LinksFile {
  */
 export function writeLinks(root: string, links: LinksFile): void {
   const linksPath = getLinksPath(root);
-  writeFileSync(linksPath, JSON.stringify(links, null, 2) + '\n');
+  // Sort by document path for deterministic output (reduces git merge conflicts)
+  const sorted = { ...links, links: [...links.links].sort((a, b) => a.document.localeCompare(b.document)) };
+  writeFileSync(linksPath, JSON.stringify(sorted, null, 2) + '\n');
 }
 
 /**

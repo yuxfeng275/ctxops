@@ -1,0 +1,53 @@
+{
+  "name": "ctxops",
+  "version": "0.1.0",
+  "description": "The Context Integrity Engine for AI Coding Teams",
+  "type": "module",
+  "bin": {
+    "ctx": "./dist/cli.js",
+    "ctxops": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "context-engineering",
+    "ai-coding",
+    "context-integrity",
+    "documentation",
+    "agents-md",
+    "claude-md",
+    "context-drift",
+    "developer-tools"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yuxfeng275/ctxops.git"
+  },
+  "homepage": "https://github.com/yuxfeng275/ctxops",
+  "bugs": {
+    "url": "https://github.com/yuxfeng275/ctxops/issues"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "minimatch": "^10.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}

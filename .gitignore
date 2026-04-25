@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+_test_workspace/
+_e2e_test/
+examples/demo-workspace/
+
+# OMC harness state (not project artifacts)
+.omc/
+.omx/
+
+# Environment
+.env
+.env.local

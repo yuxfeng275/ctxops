@@ -28,3 +28,4 @@ examples/demo-workspace/
 .env.local
 
 others
+benchmark/.tmp/

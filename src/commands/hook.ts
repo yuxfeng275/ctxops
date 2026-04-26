@@ -19,16 +19,10 @@ if [ ! -f ".ctxops/config.json" ]; then
   exit 0
 fi
 
-# Get the base branch (default: main, fallback: master)
-BASE="main"
-git rev-parse --verify main >/dev/null 2>&1 || BASE="master"
+# Use --staged mode to check files being committed (not PR diff)
+npx --yes ctxops doctor --base HEAD --staged --mode warn 2>/dev/null
 
-# Run doctor in warn mode (non-blocking by default)
-# Change "warn" to "strict" below to block commits on drift
-npx --yes ctxops doctor --base "$BASE" --mode warn 2>/dev/null
-
-# To make this blocking, uncomment the next line:
-# npx --yes ctxops doctor --base "$BASE" --mode strict 2>/dev/null
+# To make this blocking, change --mode warn to --mode strict
 `;
 
 export async function hookCommand(
@@ -86,7 +80,7 @@ export async function hookCommand(
 
     chmodSync(hookPath, '755');
     console.log('');
-    console.log(chalk.dim('  Hook runs "ctx doctor --mode warn" before each commit.'));
+    console.log(chalk.dim('  Hook uses --staged mode (checks files being committed).'));
     console.log(chalk.dim('  Edit .git/hooks/pre-commit to switch to --mode strict.'));
     return;
   }

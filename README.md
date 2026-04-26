@@ -98,22 +98,23 @@ Create document-to-code associations:
 
 ```bash
 ctx link --auto                    # ⭐ Auto-discover all links (zero config)
+ctx link --auto --deep             # Include Layer 5 semantic matching
 ctx link docs/ai/modules/order.md "services/order/**"  # Manual link
 ctx link --list                    # Show all links
 ctx link --remove <doc>            # Remove a link
 ```
 
-#### 5-Layer Smart Auto-Link
+#### Multi-Layer Smart Auto-Link
 
-`ctx link --auto` uses five inference layers to discover document-code associations:
+`ctx link --auto` uses four inference layers by default, with Layer 5 opt-in:
 
-| Layer | Method | Example |
-|---|---|---|
-| 1. `ctxops` comment | `<!-- ctxops: paths=... -->` | Explicit, highest priority |
-| 2. Convention | Directory name matching | `modules/order.md` → `services/order/**` |
-| 3. Content scan | Code paths referenced in markdown | Doc mentions `services/inventory/service.ts` |
-| 4. Git co-change | Files modified together in git history | Statistical association from commits |
-| 5. Semantic match | Class/function names grep-matched | Doc mentions `OrderHandler` → finds the file |
+| Layer | Method | Default | Example |
+|---|---|---|---|
+| 1. `ctxops` comment | `<!-- ctxops: paths=... -->` | ✅ | Explicit, highest priority |
+| 2. Convention | Directory name matching | ✅ | `modules/order.md` → `services/order/**` |
+| 3. Content scan | Code paths referenced in markdown | ✅ | Doc mentions `services/inventory/service.ts` |
+| 4. Git co-change | Files modified together in git history | ✅ | Statistical association from commits |
+| 5. Semantic match | Class/function names grep-matched | `--deep` | Higher noise risk, opt-in |
 
 ### `ctx doctor --base <branch>`
 
@@ -121,19 +122,24 @@ PR-level context drift detection:
 
 ```bash
 ctx doctor --base main                    # Text output (default)
+ctx doctor --base main --explain          # Show why each doc was flagged
 ctx doctor --base main --format json      # Machine-readable
 ctx doctor --base main --format sarif     # GitHub Code Scanning
 ctx doctor --base main --mode strict      # Exit 1 on drift (for CI)
+ctx doctor --base HEAD --staged           # Check staged files (pre-commit)
 ```
 
 If no links exist, `doctor` auto-discovers them — truly zero config.
+
+> **Error handling**: If the base branch doesn't exist or git comparison fails, `doctor` reports an explicit error instead of silently passing. All git arguments are sanitized against injection.
 
 ### `ctx status`
 
 Global context health overview — like `git status` for your AI context:
 
 ```bash
-ctx status
+ctx status                         # Health overview
+ctx status --coverage              # Include code directory coverage
 
 # Output:
 #   Context Health: ██████████████████████████████ 100%
@@ -141,23 +147,10 @@ ctx status
 #
 #   ✔  docs/ai/modules/order.md        2d ago  (3 paths)
 #   ◐  docs/ai/modules/inventory.md   25d ago  (2 paths)
-```
-
-### `ctx coverage`
-
-Show which code directories have context docs vs which are uncovered:
-
-```bash
-ctx coverage
-
-# Output:
-#   Context Coverage: ████████████████████░░░░░░░░░░ 67%
-#   4/6 code directories have linked context docs
 #
-#   Covered:
-#     ✔ services/order
-#     ✔ services/inventory
-#   Uncovered:
+#   ── Coverage ──
+#   Context Coverage: ████████████████████░░░░░░░░░░ 67%
+#   4/6 code directories covered
 #     ✖ services/payment  ← needs context doc
 ```
 
@@ -171,7 +164,7 @@ ctx hook remove     # Remove it
 ctx hook            # Check status
 ```
 
-The hook runs `ctx doctor --mode warn` before each commit.
+The hook uses `--staged` mode: it checks files being committed, not the full branch diff.
 
 ## AI Agent Integration
 

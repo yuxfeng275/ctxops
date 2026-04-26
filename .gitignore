@@ -26,3 +26,5 @@ examples/demo-workspace/
 # Environment
 .env
 .env.local
+
+others

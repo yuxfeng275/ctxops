@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import path from 'node:path';
-import { isGitRepo, getGitRoot, getChangedFiles, getFileDiffStat, getLastModifiedDate, daysSince, getCurrentBranch, isFileInChangedList } from '../lib/git.js';
+import { isGitRepo, getGitRoot, getChangedFiles, getStagedFiles, getFileDiffStat, getLastModifiedDate, daysSince, getCurrentBranch, isFileInChangedList } from '../lib/git.js';
 import { isInitialized, readConfig } from '../lib/config.js';
 import { readLinks, upsertLink } from '../lib/links.js';
 import { findMatchingChangedFiles } from '../lib/glob.js';
@@ -21,6 +21,8 @@ interface DoctorOptions {
   format?: 'text' | 'json' | 'sarif';
   mode?: 'warn' | 'strict';
   ci?: boolean;
+  explain?: boolean;
+  staged?: boolean;
 }
 
 export async function doctorCommand(options: DoctorOptions): Promise<void> {
@@ -78,8 +80,20 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   const format = options.format ?? 'text';
   const threshold = config.doctor.freshnessThresholdDays;
 
-  // Get changed files
-  const changedFiles = getChangedFiles(options.base, root);
+  // Get changed files — either from PR diff or staged files
+  let changedFiles: string[];
+  try {
+    if (options.staged) {
+      changedFiles = getStagedFiles(root);
+    } else {
+      changedFiles = getChangedFiles(options.base, root);
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(chalk.red(`Error: ${message}`));
+    process.exit(1);
+  }
+
   const head = getCurrentBranch(root);
 
   // Analyze each linked document
@@ -153,7 +167,7 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
   };
 
   const report: DoctorReport = {
-    base: options.base,
+    base: options.staged ? '(staged)' : options.base,
     head,
     changedFiles: changedFiles.length,
     linkedDocuments: linksFile.links.length,
@@ -172,6 +186,24 @@ export async function doctorCommand(options: DoctorOptions): Promise<void> {
     default:
       console.log(formatDoctorReportText(report));
       break;
+  }
+
+  // Explain mode: show why each doc was flagged
+  if (options.explain && format === 'text') {
+    const flagged = results.filter(r => r.status === 'drifted' || r.status === 'stale_drifted');
+    if (flagged.length > 0) {
+      console.log(chalk.bold('\n── Explain ──\n'));
+      for (const r of flagged) {
+        const link = linksFile.links.find(l => l.document === r.document);
+        console.log(chalk.yellow(`  ${r.document}`));
+        console.log(chalk.dim(`    Linked to: ${link?.codePaths.join(', ')}`));
+        console.log(chalk.dim(`    Source: ${link?.metadata.inferredFrom ?? 'manual'}`));
+        for (const af of r.affectedBy) {
+          console.log(chalk.dim(`    Changed: ${af.file}  +${af.additions} -${af.deletions}`));
+        }
+        console.log('');
+      }
+    }
   }
 
   // Strict mode: exit 1 if issues found

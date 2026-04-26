@@ -98,22 +98,23 @@ ctx init
 
 ```bash
 ctx link --auto                    # ⭐ 自动发现所有关联（零配置）
+ctx link --auto --deep             # 包含 Layer 5 语义匹配
 ctx link docs/ai/modules/order.md "services/order/**"  # 手动关联
 ctx link --list                    # 查看所有关联
 ctx link --remove <文档>            # 移除关联
 ```
 
-#### 5 层智能自动关联
+#### 多层智能自动关联
 
-`ctx link --auto` 使用五层推断引擎自动发现文档-代码关联：
+`ctx link --auto` 默认使用四层推断引擎，Layer 5 需显式开启：
 
-| 层 | 方法 | 示例 |
-|---|---|---|
-| 1. `ctxops` 注释 | `<!-- ctxops: paths=... -->` | 显式声明，最高优先级 |
-| 2. 目录约定 | 目录名匹配 | `modules/order.md` → `services/order/**` |
-| 3. 内容扫描 | Markdown 中引用的代码路径 | 文档提到 `services/inventory/service.ts` |
-| 4. Git 共变分析 | git 历史中一起修改的文件 | 统计关联 |
-| 5. 语义匹配 | 类名/函数名 grep 匹配 | 文档提到 `OrderHandler` → 找到定义文件 |
+| 层 | 方法 | 默认 | 示例 |
+|---|---|---|---|
+| 1. `ctxops` 注释 | `<!-- ctxops: paths=... -->` | ✅ | 显式声明，最高优先级 |
+| 2. 目录约定 | 目录名匹配 | ✅ | `modules/order.md` → `services/order/**` |
+| 3. 内容扫描 | Markdown 中引用的代码路径 | ✅ | 文档提到 `services/inventory/service.ts` |
+| 4. Git 共变分析 | git 历史中一起修改的文件 | ✅ | 统计关联 |
+| 5. 语义匹配 | 类名/函数名 grep 匹配 | `--deep` | 噪音较高，需显式开启 |
 
 ### `ctx doctor --base <分支>`
 
@@ -121,19 +122,24 @@ PR 级上下文漂移检测：
 
 ```bash
 ctx doctor --base main                    # 文本输出（默认）
+ctx doctor --base main --explain          # 显示每个文档被标记的原因
 ctx doctor --base main --format json      # 机器可读
 ctx doctor --base main --format sarif     # GitHub Code Scanning
 ctx doctor --base main --mode strict      # 发现漂移则退出码为 1（用于 CI）
+ctx doctor --base HEAD --staged           # 检查已暂存文件（pre-commit 模式）
 ```
 
 如果没有 link，`doctor` 会自动发现 —— 真正的零配置。
+
+> **错误处理**：如果 base 分支不存在或 git 比较失败，`doctor` 会显式报错而非静默通过。所有 git 参数已做注入防护。
 
 ### `ctx status`
 
 全局上下文健康概览 —— 类似 `git status`：
 
 ```bash
-ctx status
+ctx status                         # 健康概览
+ctx status --coverage              # 包含代码目录覆盖率
 
 # 输出：
 #   Context Health: ██████████████████████████████ 100%
@@ -141,23 +147,10 @@ ctx status
 #
 #   ✔  docs/ai/modules/order.md        2d ago  (3 paths)
 #   ◐  docs/ai/modules/inventory.md   25d ago  (2 paths)
-```
-
-### `ctx coverage`
-
-显示哪些代码目录有上下文文档，哪些缺失：
-
-```bash
-ctx coverage
-
-# 输出：
-#   Context Coverage: ████████████████████░░░░░░░░░░ 67%
-#   4/6 code directories have linked context docs
 #
-#   Covered:
-#     ✔ services/order
-#     ✔ services/inventory
-#   Uncovered:
+#   ── Coverage ──
+#   Context Coverage: ████████████████████░░░░░░░░░░ 67%
+#   4/6 code directories covered
 #     ✖ services/payment  ← 需要上下文文档
 ```
 
@@ -171,7 +164,7 @@ ctx hook remove     # 移除钩子
 ctx hook            # 查看状态
 ```
 
-钩子在每次提交前运行 `ctx doctor --mode warn`。
+钩子使用 `--staged` 模式：检查即将提交的文件，而非分支全量 diff。
 
 ## AI Agent 集成
 

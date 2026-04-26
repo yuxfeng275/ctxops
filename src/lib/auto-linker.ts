@@ -219,16 +219,17 @@ export function extractPathsFromCtxopsComment(documentPath: string): string[] {
 }
 
 /**
- * Auto-discover all links for a document using the five-layer strategy:
+ * Auto-discover all links for a document using the multi-layer strategy:
  *   1. Explicit: <!-- ctxops: paths=... -->
  *   2. Convention: directory name matching
  *   3. Content: code path references in the markdown
  *   4. Git co-change: files frequently modified together in git history
- *   5. Semantic: technical identifiers (class/function names) grep-matched to code
+ *   5. Semantic: technical identifiers grep-matched to code (opt-in via deep=true, high noise risk)
  */
 export function autoDiscoverLinks(
   documentPath: string,
   root: string,
+  options?: { deep?: boolean },
 ): { codePaths: string[]; sources: string[] } {
   const codePaths: string[] = [];
   const sources: string[] = [];
@@ -257,10 +258,13 @@ export function autoDiscoverLinks(
   const coChangeGlobs = coChangesToGlobs(coChanges);
   addPaths(coChangeGlobs, 'git-cochange');
 
-  // Layer 5: Semantic identifier matching
-  const semanticPaths = analyzeSemanticLinks(documentPath, root);
-  addPaths(semanticPaths, 'semantic');
+  // Layer 5: Semantic identifier matching (opt-in, high noise risk)
+  if (options?.deep) {
+    const semanticPaths = analyzeSemanticLinks(documentPath, root);
+    addPaths(semanticPaths, 'semantic');
+  }
 
   return { codePaths, sources };
 }
+
 

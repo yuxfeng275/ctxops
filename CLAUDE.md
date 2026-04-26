@@ -4,51 +4,60 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository status
 
-This repo is **docs-only** right now — no source code, no build system, no tests. It contains the planning artifacts for a product called `ctxops` that has not started implementation yet. There is no `pnpm`, `npm`, `make`, or test command to run; do not invent one.
+This is an active TypeScript CLI project at **v0.2.0**. The source code is in `src/`, tests in `tests/`, and it builds with `npm run build` (tsc). Run `npm test` to execute the test suite.
 
-If asked to "build" or "run tests," stop and clarify — the commands in the docs (`ctx link`, `ctx doctor`, `ctx compose`, `ctx render`) describe the *future* CLI, not anything executable today.
+## What ctxops is
 
-## What `ctxops` is
+A **CLI-first Context Integrity Engine** for AI coding tools. Core thesis: **don't build another coding agent — build the context integrity layer coding agents depend on.**
 
-A planned **CLI-first Context Integrity Engine** for AI coding tools. The core thesis (see `docs/adr/ADR-0001-ctxops-direction.md` and `docs/adr/ADR-0002-doctor-first-pivot.md`): **do not build another coding agent**. Build the context integrity layer coding agents depend on — PR-level drift detection, document-code linkage, multi-tool rendering, freshness checks.
+The product is **doctor-first**: the core differentiator is `ctx doctor` (PR-level context drift detection). It detects when documentation drifts from code — right in your PR — so AI never acts on stale context.
 
-The product is **doctor-first** (ADR-0002): the core differentiator is `ctx doctor` (PR-level context drift detection), not `ctx compose` (context assembly). The key value proposition: detect when documentation drifts from code — right in your PR — so AI never acts on stale context.
+## Commands
 
-The capability priority that defines the product scope:
+```bash
+ctx init                          # Scaffold .ctxops/, docs/ai/, AGENTS.md, Claude skill
+ctx link --auto                   # 5-layer auto-discovery of document-code links
+ctx link <doc> "<glob>"           # Manual link
+ctx doctor --base main            # PR-level drift detection
+ctx doctor --base main --deep     # Include semantic analysis (Layer 5)
+ctx status                        # Context health overview
+ctx hook install                  # Pre-commit hook
+```
 
-1. **Link** — explicit document-to-code associations (`ctx link`).
-2. **Doctor** — PR-level drift detection against base branch (`ctx doctor --base main`). This is the **core differentiator**.
-3. **Compose** — assemble minimal context from linked documents given a change scope (`ctx compose --changed`). Phase 1.
-4. **Render** — emit tool-specific entry files (`AGENTS.md`, `CLAUDE.md`). Phase 1.
+## Project structure
 
-**Metadata strategy** (ADR-0002 D3): convention-first + explicit-override. Metadata is inferred from paths, filenames, and git history by default. Users can optionally override with `<!-- ctxops: ... -->` comments. No mandatory YAML/frontmatter.
+```
+src/
+  cli.ts                          # CLI entry point (commander)
+  commands/
+    init.ts                       # ctx init
+    link.ts                       # ctx link (--auto, --list, --remove)
+    doctor.ts                     # ctx doctor (--base, --format, --mode, --explain)
+    status.ts                     # ctx status (--coverage)
+    hook.ts                       # ctx hook install/remove
+  lib/
+    auto-linker.ts                # 5-layer auto-discovery engine
+    smart-linker.ts               # Layer 4 (git co-change) + Layer 5 (semantic grep)
+    git.ts                        # Git operations wrapper
+    links.ts                      # .ctxops/links.json read/write
+    config.ts                     # .ctxops/config.json read/write
+    glob.ts                       # Glob matching
+    inference.ts                  # Metadata inference from paths
+    output.ts                     # Output formatting (text/json/sarif)
+tests/
+  e2e.test.ts                    # End-to-end tests with temp git repos
+```
 
-Anything outside these capabilities is **out of scope** per the PRD: no code-gen model, no cloud platform, no autonomous agent runtime, no IDE suite.
+## Tech stack
 
-## Document map
-
-All substantive content lives in `docs/`. The documents form a chain — later docs assume earlier ones:
-
-- `01-context-engineering-research.md` — why "Context Engineering as Code" and why not a mega-doc or Wiki platform.
-- `02-open-source-landscape.md` — positions `ctxops` against agents (codex, aider, cline, OpenHands), packagers (repomix, gitingest), and rule standards (agents.md, continuedev/rules). Identifies the Context Integrity gap.
-- `03-product-prd.md` — **canonical spec**: problem, users, boundaries, C4 architecture, data model, v0.1 scope, STRIDE. When PRD conflicts with other docs, PRD wins.
-- `04-readme-homepage-draft.md` — public README draft. Treat as marketing copy, not spec.
-- `05-roadmap.md` — M0 (validation) → M1 (MVP: link + doctor + init) → M2 (compose + render + CI) → M3 (ecosystem).
-- `06-demo-repo-plan.md` — first demo is a Java Spring monolith with `order`/`inventory`/`payment` modules and deliberately planted stale docs.
-- `07-github-issues.md` — P0 issue backlog for bootstrap (doctor-first priority).
-- `08-needs-analysis.md` — deep needs analysis with cross-validation.
-- `09-final-synthesis.md` — comprehensive feasibility report synthesizing all research.
-- `10-ccg-synthesis.md` — CCG triangular review (Codex × Gemini × Claude) final synthesis.
-- `11-m0-validation-report.md` — M0 validation via web research (CI-first confirmed, doctor value validated, maintenance incentive verified).
-- `12-usage-spec.md` — **MVP implementation baseline**: exact CLI behavior, data models, output formats, usage scenarios. Implementation must match this spec.
-- `13-acceptance-criteria.md` — **verification baseline**: 23 test cases + 2 E2E scenarios + performance benchmarks. All must pass for MVP completion.
-- `adr/ADR-0001-ctxops-direction.md` — the "not a coding agent" decision.
-- `adr/ADR-0002-doctor-first-pivot.md` — doctor-first pivot + Context Integrity branding + 5 key decisions.
+- TypeScript + Node.js 18+ (ESM)
+- Dependencies: chalk, commander, minimatch (zero LLM, zero cloud)
+- Build: tsc
+- Test: vitest
 
 ## When working in this repo
 
-- **Docs are the product right now.** Editing a doc is a real change, not a draft — preserve the existing voice (concise Chinese, short sections, bullets > prose, no emoji).
-- **Cross-reference, don't duplicate.** The docs deliberately don't repeat each other. If you find yourself restating content from another doc, link instead.
-- **STRIDE and ADR blocks are a convention.** Most docs end with a STRIDE threat model and/or a mini-ADR (背景 / 决策 / 后果 / 备选方案). Match this shape when adding new planning docs.
-- **Planned stack is TypeScript + Node 22** (PRD §技术栈). Go and Rust were considered and rejected for Phase 0. If implementation starts, assume a pnpm monorepo with `apps/cli` + `packages/*` + `adapters/*` + `examples/*` as laid out in the PRD.
-- **`.omc/` and `.omx/`** are OMC harness state directories — not project artifacts. Ignore them.
+- **Docs are kept in sync with code.** After any code change, update both `README.md` (EN) and `README.zh-CN.md` (CN).
+- Run `npm run build` to verify TypeScript compilation.
+- Run `npm test` to run the E2E test suite.
+- The project uses its own tool for self-checking: `node dist/cli.js doctor --base main`.

@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import path from 'node:path';
+import { readdirSync, statSync } from 'node:fs';
 import { isGitRepo, getGitRoot, getLastModifiedDate, daysSince } from '../lib/git.js';
 import { isInitialized, readConfig } from '../lib/config.js';
 import { readLinks } from '../lib/links.js';
@@ -9,6 +10,7 @@ import { upsertLink } from '../lib/links.js';
 
 interface StatusOptions {
   format?: 'text' | 'json';
+  coverage?: boolean;
 }
 
 export async function statusCommand(options: StatusOptions): Promise<void> {
@@ -79,7 +81,11 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
   const total = docs.length;
 
   if (options.format === 'json') {
-    console.log(JSON.stringify({ total, fresh, aging, stale, threshold, documents: docs }, null, 2));
+    const result: Record<string, unknown> = { total, fresh, aging, stale, threshold, documents: docs };
+    if (options.coverage) {
+      result.coverage = getCoverageData(root, linksFile);
+    }
+    console.log(JSON.stringify(result, null, 2));
     return;
   }
 
@@ -116,4 +122,79 @@ export async function statusCommand(options: StatusOptions): Promise<void> {
     const days = doc.daysSinceUpdate != null ? `${doc.daysSinceUpdate}d ago` : 'unknown';
     console.log(`  ${statusIcon(doc.health)}  ${doc.document}  ${chalk.dim(days)}  ${chalk.dim(`(${doc.codePaths} paths)`)}`);
   }
+
+  // Coverage section
+  if (options.coverage) {
+    const cov = getCoverageData(root, linksFile);
+    console.log('');
+    console.log(chalk.bold('  ── Coverage ──\n'));
+
+    const covBarWidth = 30;
+    const filledBar = Math.round((cov.percentage / 100) * covBarWidth);
+    const emptyBar = covBarWidth - filledBar;
+    const covColor = cov.percentage >= 80 ? chalk.green : cov.percentage >= 50 ? chalk.yellow : chalk.red;
+    const covBar = covColor('█'.repeat(filledBar)) + chalk.dim('░'.repeat(emptyBar));
+
+    console.log(`  Context Coverage: ${covBar} ${cov.percentage}%`);
+    console.log(`  ${cov.covered.length}/${cov.total} code directories covered`);
+
+    if (cov.uncovered.length > 0) {
+      console.log('');
+      for (const dir of cov.uncovered) {
+        console.log(chalk.red(`    ✖ ${dir}`) + chalk.dim('  ← needs context doc'));
+      }
+    }
+  }
+}
+
+// ── Coverage helper ──
+
+interface CoverageData {
+  percentage: number;
+  total: number;
+  covered: string[];
+  uncovered: string[];
+}
+
+function getCoverageData(root: string, linksFile: { links: Array<{ codePaths: string[] }> }): CoverageData {
+  const topLevelDirs = ['services', 'src', 'lib', 'packages', 'apps', 'modules', 'components', 'api', 'internal', 'cmd'];
+  const codeDirs: string[] = [];
+
+  for (const topDir of topLevelDirs) {
+    const fullPath = path.join(root, topDir);
+    if (!statSync(fullPath, { throwIfNoEntry: false })?.isDirectory()) continue;
+    try {
+      const entries = readdirSync(fullPath, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+          codeDirs.push(`${topDir}/${entry.name}`);
+        }
+      }
+      const hasFiles = entries.some(e => e.isFile() && /\.(ts|js|java|py|go|rs|rb|kt|swift|cs|cpp|c|h)$/i.test(e.name));
+      if (hasFiles) codeDirs.push(topDir);
+    } catch { /* skip */ }
+  }
+
+  codeDirs.sort();
+  const covered: string[] = [];
+  const uncovered: string[] = [];
+
+  for (const codeDir of codeDirs) {
+    let isCovered = false;
+    for (const link of linksFile.links) {
+      for (const codePath of link.codePaths) {
+        const codePathDir = codePath.replace(/\/\*\*$/, '');
+        if (codeDir.startsWith(codePathDir + '/') || codeDir === codePathDir || codePath === codeDir + '/**') {
+          isCovered = true;
+          break;
+        }
+      }
+      if (isCovered) break;
+    }
+    (isCovered ? covered : uncovered).push(codeDir);
+  }
+
+  const total = codeDirs.length;
+  const percentage = total > 0 ? Math.round((covered.length / total) * 100) : 0;
+  return { percentage, total, covered, uncovered };
 }

@@ -24,11 +24,58 @@ export function getGitRoot(cwd: string): string {
 }
 
 /**
+ * Safely escape a git ref name to prevent shell injection.
+ */
+function safeRef(ref: string): string {
+  // Only allow alphanumeric, /, -, _, .
+  if (!/^[a-zA-Z0-9/_.\-]+$/.test(ref)) {
+    throw new Error(`Invalid git ref: "${ref}"`);
+  }
+  return ref;
+}
+
+/**
+ * Check if a git ref (branch/tag) exists.
+ */
+export function refExists(ref: string, cwd: string): boolean {
+  try {
+    execSync(`git rev-parse --verify ${safeRef(ref)}`, { cwd, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Get the list of files changed between base branch and HEAD.
+ * Throws an error if the base branch doesn't exist or git comparison fails.
  */
 export function getChangedFiles(base: string, cwd: string): string[] {
+  const safe = safeRef(base);
+
+  if (!refExists(safe, cwd)) {
+    throw new Error(
+      `Base branch "${base}" does not exist. ` +
+      `Make sure you have fetched it (git fetch origin ${base}) or use a valid branch name.`
+    );
+  }
+
+  const output = execSync(`git diff --name-only ${safe}..HEAD`, {
+    cwd,
+    stdio: 'pipe',
+  })
+    .toString()
+    .trim();
+  if (!output) return [];
+  return output.split('\n').filter(Boolean);
+}
+
+/**
+ * Get the list of staged files (for pre-commit hook).
+ */
+export function getStagedFiles(cwd: string): string[] {
   try {
-    const output = execSync(`git diff --name-only ${base}..HEAD`, {
+    const output = execSync('git diff --cached --name-only', {
       cwd,
       stdio: 'pipe',
     })
@@ -37,7 +84,6 @@ export function getChangedFiles(base: string, cwd: string): string[] {
     if (!output) return [];
     return output.split('\n').filter(Boolean);
   } catch {
-    // If base branch doesn't exist or there are other git errors
     return [];
   }
 }
@@ -51,8 +97,9 @@ export function getFileDiffStat(
   cwd: string,
 ): { additions: number; deletions: number } {
   try {
+    const safe = safeRef(base);
     const output = execSync(
-      `git diff --numstat ${base}..HEAD -- "${filePath}"`,
+      `git diff --numstat ${safe}..HEAD -- "${filePath}"`,
       { cwd, stdio: 'pipe' },
     )
       .toString()

@@ -1,6 +1,6 @@
 {
   "name": "ctxops",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The Context Integrity Engine for AI Coding Teams",
   "type": "module",
   "bin": {
@@ -35,7 +35,7 @@
     "url": "https://github.com/yuxfeng275/ctxops/issues"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=18"
   },
   "files": [
     "dist"

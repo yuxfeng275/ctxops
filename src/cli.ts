@@ -5,7 +5,6 @@ import { initCommand } from './commands/init.js';
 import { linkCommand } from './commands/link.js';
 import { doctorCommand } from './commands/doctor.js';
 import { statusCommand } from './commands/status.js';
-import { coverageCommand } from './commands/coverage.js';
 import { hookCommand } from './commands/hook.js';
 
 const program = new Command();
@@ -13,7 +12,7 @@ const program = new Command();
 program
   .name('ctx')
   .description('ctxops — The Context Integrity Engine for AI Coding Teams')
-  .version('0.2.0');
+  .version('0.3.0');
 
 // ── ctx init ────────────────────────────────────────────────────
 program
@@ -31,6 +30,7 @@ program
   .description('Create or manage document-code associations')
   .argument('[paths...]', 'Document path followed by code paths')
   .option('--auto', 'Auto-discover links from docs (zero config)')
+  .option('--deep', 'Include Layer 5 semantic matching (higher noise)')
   .option('--remove', 'Remove the link for the specified document')
   .option('--list', 'List all links')
   .option('--format <format>', 'Output format: text or json', 'text')
@@ -45,6 +45,8 @@ program
   .requiredOption('--base <branch>', 'Base branch to compare against')
   .option('--format <format>', 'Output format: text, json, or sarif', 'text')
   .option('--mode <mode>', 'Check mode: warn or strict')
+  .option('--explain', 'Show why each document was flagged')
+  .option('--staged', 'Check staged files instead of branch diff (for pre-commit)')
   .option('--ci', 'CI mode: output GitHub Actions annotations')
   .action(async (options) => {
     await doctorCommand(options);
@@ -53,19 +55,11 @@ program
 // ── ctx status ──────────────────────────────────────────────────
 program
   .command('status')
-  .description('Show context health overview')
+  .description('Show context health overview and coverage')
+  .option('--coverage', 'Include code directory coverage report')
   .option('--format <format>', 'Output format: text or json', 'text')
   .action(async (options) => {
     await statusCommand(options);
-  });
-
-// ── ctx coverage ────────────────────────────────────────────────
-program
-  .command('coverage')
-  .description('Show context coverage of code directories')
-  .option('--format <format>', 'Output format: text or json', 'text')
-  .action(async (options) => {
-    await coverageCommand(options);
   });
 
 // ── ctx hook ────────────────────────────────────────────────────

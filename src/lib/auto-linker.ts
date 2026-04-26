@@ -230,14 +230,24 @@ export function autoDiscoverLinks(
   documentPath: string,
   root: string,
   options?: { deep?: boolean },
-): { codePaths: string[]; sources: string[] } {
+): { codePaths: string[]; sources: string[]; details: Array<{ path: string; confidence: number; source: string }> } {
   const codePaths: string[] = [];
   const sources: string[] = [];
+  const details: Array<{ path: string; confidence: number; source: string }> = [];
+
+  const confidenceMap: Record<string, number> = {
+    'ctxops-comment': 1.0,
+    'convention': 0.8,
+    'content-scan': 0.7,
+    'git-cochange': 0.5,
+    'semantic': 0.3,
+  };
 
   const addPaths = (paths: string[], source: string) => {
     for (const cp of paths) {
       if (!codePaths.includes(cp)) {
         codePaths.push(cp);
+        details.push({ path: cp, confidence: confidenceMap[source] ?? 0.5, source });
         if (!sources.includes(source)) sources.push(source);
       }
     }
@@ -264,7 +274,8 @@ export function autoDiscoverLinks(
     addPaths(semanticPaths, 'semantic');
   }
 
-  return { codePaths, sources };
+  return { codePaths, sources, details };
 }
+
 
 

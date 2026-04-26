@@ -106,15 +106,31 @@ ctx link --remove <文档>            # 移除关联
 
 #### 多层智能自动关联
 
-`ctx link --auto` 默认使用四层推断引擎，Layer 5 需显式开启：
+`ctx link --auto` 默认使用四层推断引擎，每条关联附带**置信度评分**，Layer 5 需显式开启：
 
-| 层 | 方法 | 默认 | 示例 |
+| 层 | 方法 | 置信度 | 默认 |
 |---|---|---|---|
-| 1. `ctxops` 注释 | `<!-- ctxops: paths=... -->` | ✅ | 显式声明，最高优先级 |
-| 2. 目录约定 | 目录名匹配 | ✅ | `modules/order.md` → `services/order/**` |
-| 3. 内容扫描 | Markdown 中引用的代码路径 | ✅ | 文档提到 `services/inventory/service.ts` |
-| 4. Git 共变分析 | git 历史中一起修改的文件 | ✅ | 统计关联 |
-| 5. 语义匹配 | 类名/函数名 grep 匹配 | `--deep` | 噪音较高，需显式开启 |
+| 1. `ctxops` 注释 | `<!-- ctxops: paths=... -->` | 100% | ✅ |
+| 2. 目录约定 | 目录名匹配 | 80% | ✅ |
+| 3. 内容扫描 | Markdown 中引用的代码路径 | 70% | ✅ |
+| 4. Git 共变分析 | git 历史中一起修改的文件 | 50% | ✅ |
+| 5. 语义匹配 | 类名/函数名 grep 匹配 | 30% | `--deep` |
+
+#### 多格式 Context 检测
+
+`ctx link --auto` 自动检测并跟踪所有主流 AI 上下文文件格式：
+
+| 格式 | 文件 | 工具 |
+|---|---|---|
+| AGENTS.md | `AGENTS.md` | Codex, Gemini CLI, OpenCode, Cline |
+| CLAUDE.md | `CLAUDE.md` | Claude Code |
+| Claude Skill | `.claude/skills/*/SKILL.md` | Claude Code |
+| GEMINI.md | `GEMINI.md` | Gemini CLI |
+| Copilot | `.github/copilot-instructions.md` | GitHub Copilot |
+| Cursor Rules | `.cursor/rules/*.mdc`, `.cursorrules` | Cursor |
+| Cline Rules | `.clinerules` | Cline |
+| Aider | `CONVENTIONS.md` | Aider |
+| Windsurf | `.windsurfrules` | Windsurf |
 
 ### `ctx doctor --base <分支>`
 

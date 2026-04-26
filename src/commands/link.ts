@@ -3,15 +3,17 @@ import path from 'node:path';
 import chalk from 'chalk';
 import { isGitRepo, getGitRoot, getLastModifiedDate, daysSince } from '../lib/git.js';
 import { isInitialized, readConfig } from '../lib/config.js';
-import { readLinks, upsertLink, removeLink } from '../lib/links.js';
+import { readLinks, upsertLink, removeLink, type CodePathEntry } from '../lib/links.js';
 import { buildMetadata } from '../lib/inference.js';
 import { formatLinkListText, formatLinkListJson } from '../lib/output.js';
 import { findMarkdownFiles, autoDiscoverLinks } from '../lib/auto-linker.js';
+import { detectContextFiles } from '../lib/formats.js';
 
 interface LinkOptions {
   remove?: boolean;
   list?: boolean;
   auto?: boolean;
+  deep?: boolean;
   format?: 'text' | 'json';
 }
 
@@ -35,7 +37,7 @@ export async function linkCommand(
 
   // ── Auto mode ──────────────────────────────────────
   if (options.auto) {
-    await autoLinkMode(root);
+    await autoLinkMode(root, options.deep);
     return;
   }
 
@@ -124,15 +126,34 @@ export async function linkCommand(
 
 // ── Auto-link implementation ─────────────────────────
 
-async function autoLinkMode(root: string): Promise<void> {
+async function autoLinkMode(root: string, deep?: boolean): Promise<void> {
   const config = readConfig(root);
   const contextDir = path.join(root, config.contextDir);
 
   console.log(chalk.bold('ctx link --auto: scanning for document-code associations...\n'));
 
+  // Phase 1: Detect known context files
+  const contextFiles = detectContextFiles(root);
+  if (contextFiles.length > 0) {
+    console.log(chalk.dim('  Detected context files:'));
+    for (const cf of contextFiles) {
+      console.log(chalk.dim(`    ${cf.format.name}: ${cf.path} (${cf.format.tools.join(', ')})`));
+    }
+    console.log('');
+  }
+
   const mdFiles = findMarkdownFiles(contextDir);
 
-  if (mdFiles.length === 0) {
+  // Also include detected context files that are not in contextDir
+  const allDocs = [...mdFiles];
+  for (const cf of contextFiles) {
+    const fullPath = path.join(root, cf.path);
+    if (!allDocs.includes(fullPath) && cf.path.endsWith('.md')) {
+      allDocs.push(fullPath);
+    }
+  }
+
+  if (allDocs.length === 0) {
     console.log(chalk.yellow('No markdown files found in ' + config.contextDir));
     return;
   }
@@ -140,7 +161,7 @@ async function autoLinkMode(root: string): Promise<void> {
   let linked = 0;
   let skipped = 0;
 
-  for (const mdFile of mdFiles) {
+  for (const mdFile of allDocs) {
     const relPath = path.relative(root, mdFile);
 
     // Skip template files
@@ -149,7 +170,7 @@ async function autoLinkMode(root: string): Promise<void> {
       continue;
     }
 
-    const { codePaths, sources } = autoDiscoverLinks(mdFile, root);
+    const { codePaths, sources, details } = autoDiscoverLinks(mdFile, root, { deep });
 
     if (codePaths.length === 0) {
       console.log(chalk.dim(`  ○ ${relPath} — no code paths found, skipped`));
@@ -157,16 +178,22 @@ async function autoLinkMode(root: string): Promise<void> {
       continue;
     }
 
-    // Build metadata and upsert
+    // Build metadata and upsert with confidence details
     const metadata = buildMetadata(relPath, root);
-    upsertLink(root, relPath, codePaths, metadata);
+    const codePathDetails: CodePathEntry[] = details.map(d => ({
+      path: d.path,
+      confidence: d.confidence,
+      source: d.source,
+    }));
+    upsertLink(root, relPath, codePaths, metadata, codePathDetails);
     linked++;
 
     console.log(chalk.green('  ✔') + ` ${relPath}`);
-    for (const cp of codePaths) {
-      console.log(chalk.dim(`    → ${cp}`));
+    for (const d of details) {
+      const confColor = d.confidence >= 0.7 ? chalk.green : d.confidence >= 0.5 ? chalk.yellow : chalk.dim;
+      const confStr = confColor(`[${(d.confidence * 100).toFixed(0)}%]`);
+      console.log(`    → ${d.path}  ${confStr}  ${chalk.dim(d.source)}`);
     }
-    console.log(chalk.dim(`    Sources: ${sources.join(', ')}`));
   }
 
   console.log('');

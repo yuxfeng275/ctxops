@@ -9,9 +9,20 @@ export interface LinkMetadata {
   overrides: Record<string, string>;
 }
 
+/**
+ * Confidence info for a single code path in a link.
+ */
+export interface CodePathEntry {
+  path: string;
+  confidence: number;  // 0.0 - 1.0
+  source: string;      // e.g. 'ctxops-comment', 'convention', 'content-scan', 'git-cochange', 'semantic'
+}
+
 export interface LinkEntry {
   document: string;
   codePaths: string[];
+  /** Detailed per-path confidence (optional, added in v0.3.0) */
+  codePathDetails?: CodePathEntry[];
   metadata: LinkMetadata;
   lastLinked: string;
 }
@@ -22,8 +33,20 @@ export interface LinksFile {
 }
 
 const EMPTY_LINKS: LinksFile = {
-  version: '0.1.0',
+  version: '0.3.0',
   links: [],
+};
+
+/**
+ * Confidence scores by auto-link layer.
+ */
+export const LAYER_CONFIDENCE: Record<string, number> = {
+  'ctxops-comment': 1.0,
+  'convention': 0.8,
+  'content-scan': 0.7,
+  'git-cochange': 0.5,
+  'semantic': 0.3,
+  'manual': 1.0,
 };
 
 /**
@@ -70,6 +93,7 @@ export function upsertLink(
   document: string,
   codePaths: string[],
   metadata: LinkMetadata,
+  codePathDetails?: CodePathEntry[],
 ): LinkEntry {
   const linksFile = readLinks(root);
   const existingIndex = linksFile.links.findIndex((l) => l.document === document);
@@ -77,6 +101,7 @@ export function upsertLink(
   const entry: LinkEntry = {
     document,
     codePaths,
+    ...(codePathDetails && codePathDetails.length > 0 ? { codePathDetails } : {}),
     metadata,
     lastLinked: new Date().toISOString(),
   };

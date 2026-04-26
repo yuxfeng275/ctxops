@@ -106,15 +106,31 @@ ctx link --remove <doc>            # Remove a link
 
 #### Multi-Layer Smart Auto-Link
 
-`ctx link --auto` uses four inference layers by default, with Layer 5 opt-in:
+`ctx link --auto` uses four inference layers by default, with Layer 5 opt-in. Each link includes a **confidence score**:
 
-| Layer | Method | Default | Example |
+| Layer | Method | Confidence | Default |
 |---|---|---|---|
-| 1. `ctxops` comment | `<!-- ctxops: paths=... -->` | ✅ | Explicit, highest priority |
-| 2. Convention | Directory name matching | ✅ | `modules/order.md` → `services/order/**` |
-| 3. Content scan | Code paths referenced in markdown | ✅ | Doc mentions `services/inventory/service.ts` |
-| 4. Git co-change | Files modified together in git history | ✅ | Statistical association from commits |
-| 5. Semantic match | Class/function names grep-matched | `--deep` | Higher noise risk, opt-in |
+| 1. `ctxops` comment | `<!-- ctxops: paths=... -->` | 100% | ✅ |
+| 2. Convention | Directory name matching | 80% | ✅ |
+| 3. Content scan | Code paths referenced in markdown | 70% | ✅ |
+| 4. Git co-change | Files modified together in git history | 50% | ✅ |
+| 5. Semantic match | Class/function names grep-matched | 30% | `--deep` |
+
+#### Multi-Format Context Detection
+
+`ctx link --auto` automatically detects and tracks all major AI context file formats:
+
+| Format | Files | Tools |
+|---|---|---|
+| AGENTS.md | `AGENTS.md` | Codex, Gemini CLI, OpenCode, Cline |
+| CLAUDE.md | `CLAUDE.md` | Claude Code |
+| Claude Skill | `.claude/skills/*/SKILL.md` | Claude Code |
+| GEMINI.md | `GEMINI.md` | Gemini CLI |
+| Copilot | `.github/copilot-instructions.md` | GitHub Copilot |
+| Cursor Rules | `.cursor/rules/*.mdc`, `.cursorrules` | Cursor |
+| Cline Rules | `.clinerules` | Cline |
+| Aider | `CONVENTIONS.md` | Aider |
+| Windsurf | `.windsurfrules` | Windsurf |
 
 ### `ctx doctor --base <branch>`
 

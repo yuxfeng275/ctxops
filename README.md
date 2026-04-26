@@ -147,6 +147,15 @@ ctx doctor --base HEAD --staged           # Check staged files (pre-commit)
 
 If no links exist, `doctor` auto-discovers them — truly zero config.
 
+#### Deep Analysis (not just "was file touched")
+
+`doctor` goes beyond checking if a file was modified. It performs **content-level verification**:
+
+- **Sync verification**: When a doc is updated alongside code, `doctor` extracts changed function/class/interface names from the code diff and checks if the doc diff actually addresses them. A trivial doc change (whitespace only) is flagged as `TOUCHED ONLY`, not `SYNCED`.
+- **Change summary**: Shows which identifiers changed in code (`Changed: safeRef, getStagedFiles`).
+- **Doc reference scanning**: With `--explain`, highlights specific lines in your doc that reference changed code — telling you exactly what may need updating.
+- **Broad-scope demotion**: Project-level docs (linked to `src/**`) won't trigger warnings on every PR — only when files are added or deleted.
+
 > **Error handling**: If the base branch doesn't exist or git comparison fails, `doctor` reports an explicit error instead of silently passing. All git arguments are sanitized against injection.
 
 ### `ctx status`

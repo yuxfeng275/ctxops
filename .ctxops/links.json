@@ -4,21 +4,9 @@
     {
       "document": "CLAUDE.md",
       "codePaths": [
-        "src/commands/**",
-        "src/lib/**",
         "src/**"
       ],
       "codePathDetails": [
-        {
-          "path": "src/commands/**",
-          "confidence": 0.5,
-          "source": "git-cochange"
-        },
-        {
-          "path": "src/lib/**",
-          "confidence": 0.5,
-          "source": "git-cochange"
-        },
         {
           "path": "src/**",
           "confidence": 0.5,
@@ -31,31 +19,13 @@
         "inferredFrom": "path",
         "overrides": {}
       },
-      "lastLinked": "2026-04-26T14:13:43.131Z"
+      "lastLinked": "2026-04-26T14:40:07.154Z"
     },
     {
       "document": "docs/ai/00-project-overview.md",
       "codePaths": [
         "src/**",
-        ".ctxops/**",
-        ".ctxops/config.json",
-        ".ctxops/links.json",
-        "src/cli.ts",
-        "src/commands/**",
-        "src/commands/init.ts",
-        "src/commands/link.ts",
-        "src/commands/doctor.ts",
-        "src/commands/status.ts",
-        "src/commands/hook.ts",
-        "src/lib/**",
-        "src/lib/auto-linker.ts",
-        "src/lib/smart-linker.ts",
-        "src/lib/git.ts",
-        "src/lib/links.ts",
-        "src/lib/config.ts",
-        "src/lib/glob.ts",
-        "src/lib/inference.ts",
-        "src/lib/output.ts"
+        ".ctxops/**"
       ],
       "codePathDetails": [
         {
@@ -65,96 +35,6 @@
         },
         {
           "path": ".ctxops/**",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": ".ctxops/config.json",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": ".ctxops/links.json",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/cli.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/**",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/init.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/link.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/doctor.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/status.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/commands/hook.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/**",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/auto-linker.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/smart-linker.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/git.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/links.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/config.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/glob.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/inference.ts",
-          "confidence": 0.7,
-          "source": "content-scan"
-        },
-        {
-          "path": "src/lib/output.ts",
           "confidence": 0.7,
           "source": "content-scan"
         }
@@ -168,26 +48,14 @@
           "paths": "src/**"
         }
       },
-      "lastLinked": "2026-04-26T14:13:42.835Z"
+      "lastLinked": "2026-04-26T14:40:06.924Z"
     },
     {
       "document": "docs/ai/01-architecture.md",
       "codePaths": [
-        "src/lib/**",
-        "src/commands/**",
         "src/**"
       ],
       "codePathDetails": [
-        {
-          "path": "src/lib/**",
-          "confidence": 1,
-          "source": "ctxops-comment"
-        },
-        {
-          "path": "src/commands/**",
-          "confidence": 1,
-          "source": "ctxops-comment"
-        },
         {
           "path": "src/**",
           "confidence": 0.5,
@@ -203,7 +71,7 @@
           "paths": "src/lib/** src/commands/**"
         }
       },
-      "lastLinked": "2026-04-26T14:13:43.024Z"
+      "lastLinked": "2026-04-26T14:40:07.036Z"
     }
   ]
 }

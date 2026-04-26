@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { analyzeCoChanges, coChangesToGlobs, analyzeSemanticLinks } from './smart-linker.js';
+import { deduplicateGlobs } from './glob.js';
 
 /**
  * Recursively find all markdown files in a directory.
@@ -274,8 +275,9 @@ export function autoDiscoverLinks(
     addPaths(semanticPaths, 'semantic');
   }
 
-  return { codePaths, sources, details };
+  // Deduplicate: remove contained globs (src/** + src/cli.ts → src/**)
+  const deduped = deduplicateGlobs(codePaths);
+  const dedupedDetails = details.filter(d => deduped.includes(d.path));
+
+  return { codePaths: deduped, sources, details: dedupedDetails };
 }
-
-
-

@@ -11,6 +11,18 @@ export interface DoctorResult {
   daysSinceUpdate: number | null;
   freshnessThreshold: number;
   affectedBy: Array<{ file: string; additions: number; deletions: number }>;
+  /** Sync verification verdict (Phase 1.5) */
+  syncVerdict?: 'truly_synced' | 'touched_only' | 'unverified';
+  /** Code identifiers that changed (function/class/interface names) */
+  changedIdentifiers?: string[];
+  /** Human-readable change summaries */
+  changeSummaries?: string[];
+  /** New files added in affected paths */
+  newFiles?: string[];
+  /** Deleted files in affected paths */
+  deletedFiles?: string[];
+  /** Whether this was demoted from warning to info due to broad scope */
+  broadScopeDemoted?: boolean;
 }
 
 export interface DoctorReport {
